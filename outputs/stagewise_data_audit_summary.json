@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-05-23T00:08:44",
+  "stock_source": "outputs\\stock_panel.parquet",
+  "macro_source": "outputs\\macro_quarterly_aligned.csv",
+  "stock_rows": 42720,
+  "quarter_count": 30,
+  "stock_factor_count": 21,
+  "macro_factor_count": 11,
+  "composite_factor_count": 231,
+  "label_definition": "future_return_1q = 原始月平均收益率，不做二次 shift",
+  "macro_factor_note": "作业说明中提到 12 个宏观因子，但实际提供文件仅能识别 11 个具名宏观变量。"
+}

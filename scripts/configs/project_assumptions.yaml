@@ -1,0 +1,20 @@
+# Project assumptions adopted by scripts/p0_assumption_ledger.py
+# generated_at: 2026-05-22T09:54:44
+# source_override_yaml: C:/Users/10607/PycharmProjects/数据营销/scripts/configs/project_assumptions.yaml
+assumptions:
+  business_goal: "用多因子与宏观因子辅助变量选择、评级与收益预测"
+  task_type: "ranking"
+  label_col: "下一期收益率"
+  label_is_shifted: "true"
+  date_mapping_rule: "因子期 t 匹配收益期 t+1，宏观数据只使用预测时点已发布数据"
+  macro_frequency_alignment: "按预测时点可获得的上一期宏观数据对齐"
+  quarterly_rebalance_rule: "quarterly"
+  train_valid_test_scheme: "time_series_split"
+  rating_bin_rule: "5"
+  benchmark_series: "equal_weight_universe"
+  transaction_cost_bps: "0.001"
+  slippage_bps: "5"
+  industry_neutralization: "false"
+  missing_value_policy: "median_by_period"
+  outlier_policy: "winsorize_by_period_1pct_99pct"
+  leakage_guard_rules: "enabled"

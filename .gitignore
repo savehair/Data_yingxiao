@@ -1,0 +1,30 @@
+# Local IDE / cache
+.idea/
+__pycache__/
+*.py[cod]
+*.pyo
+.ipynb_checkpoints/
+
+# Local archives and extracted raw project copies
+*.zip
+outputs/extracted_project/
+
+# Large/generated binary data artifacts
+*.parquet
+*.joblib
+*.pkl
+*.pickle
+*.model
+*.bin
+
+# Model directories
+outputs/**/models/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# OS files
+Thumbs.db
+.DS_Store

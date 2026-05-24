@@ -1,0 +1,69 @@
+# Project assumptions adopted by scripts/p0_assumption_ledger.py
+# generated_at: 2026-05-22T14:26:29
+# source_override_yaml: C:/Users/10607/PycharmProjects/数据营销/configs/project_assumptions.yaml
+assumptions:
+  business_goal:
+    value: "用多因子与宏观因子辅助变量选择、股票评级与下一期收益预测"
+    status: "confirmed"
+    reason: "人工确认配置"
+  task_type:
+    value: "ranking"
+    status: "confirmed"
+    reason: "人工确认配置"
+  label_col:
+    value: "下一期收益率"
+    status: "confirmed"
+    reason: "人工确认配置"
+  label_is_shifted:
+    value: true
+    status: "confirmed"
+    reason: "人工确认配置"
+  date_mapping_rule:
+    value: "因子期 t 匹配收益期 t+1，宏观数据只使用预测时点已发布数据"
+    status: "confirmed"
+    reason: "人工确认配置"
+  macro_frequency_alignment:
+    value: "按预测时点可获得的上一期宏观数据对齐"
+    status: "confirmed"
+    reason: "人工确认配置"
+  quarterly_rebalance_rule:
+    value: "quarterly"
+    status: "confirmed"
+    reason: "人工确认配置"
+  train_valid_test_scheme:
+    value: "time_series_split"
+    status: "confirmed"
+    reason: "人工确认配置"
+  rating_bin_rule:
+    value: 5
+    status: "confirmed"
+    reason: "人工确认配置"
+  benchmark_series:
+    value: "equal_weight_universe"
+    status: "confirmed"
+    reason: "人工确认配置"
+  transaction_cost_bps:
+    value: 10
+    status: "confirmed"
+    reason: "人工确认配置"
+    note: "10 bps = 0.10%。不要把 0.001 写在 bps 字段里；0.001 是 rate 口径。"
+  slippage_bps:
+    value: 5
+    status: "confirmed"
+    reason: "人工确认配置"
+  industry_neutralization:
+    value: false
+    status: "confirmed"
+    reason: "人工确认配置"
+  missing_value_policy:
+    value: "median_by_period"
+    status: "confirmed"
+    reason: "人工确认配置"
+  outlier_policy:
+    value: "winsorize_by_period_1pct_99pct"
+    status: "confirmed"
+    reason: "人工确认配置"
+  leakage_guard_rules:
+    value: "enabled"
+    status: "confirmed"
+    reason: "人工确认配置"

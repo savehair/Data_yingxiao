@@ -1,0 +1,34 @@
+{
+  "feature_drift": {
+    "psi_warning": 0.10,
+    "psi_critical": 0.25,
+    "missing_rate_delta_warning": 0.05,
+    "missing_rate_delta_critical": 0.15,
+    "quantile_relative_delta_warning": 0.20,
+    "quantile_relative_delta_critical": 0.50
+  },
+  "prediction_drift": {
+    "mean_delta_warning": 0.50,
+    "mean_delta_critical": 1.00,
+    "std_ratio_warning_low": 0.50,
+    "std_ratio_warning_high": 2.00,
+    "std_ratio_critical_low": 0.25,
+    "std_ratio_critical_high": 4.00,
+    "psi_warning": 0.10,
+    "psi_critical": 0.25
+  },
+  "performance": {
+    "recent_periods": 3,
+    "topk": 20,
+    "topk_return_drop_warning": 0.25,
+    "topk_return_drop_critical": 0.50,
+    "rank_corr_drop_warning": 0.10,
+    "rank_corr_drop_critical": 0.25,
+    "consecutive_bad_periods_warning": 2,
+    "consecutive_bad_periods_critical": 3
+  },
+  "retrain": {
+    "critical_issue_count_trigger": 1,
+    "warning_issue_count_trigger": 3
+  }
+}

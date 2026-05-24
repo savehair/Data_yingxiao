@@ -1,0 +1,4 @@
+indicator,direction,target_min,target_max,context_direction,enabled,description
+gbdt_sklearn_histgb_prediction,positive,,,positive,true,GBDT fallback regression prediction; larger expected return is better
+rank_lightgbm_ranker_score,positive,,,positive,true,LightGBM ranker score; larger score ranks higher
+rank_xgboost_rank_score,positive,,,positive,true,XGBoost ranker score; larger score ranks higher
