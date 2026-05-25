@@ -844,12 +844,21 @@ def plot_outputs(log: pd.DataFrame, selected: pd.DataFrame, rankic: pd.DataFrame
     plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
     plt.rcParams["axes.unicode_minus"] = False
 
-    top = log.sort_values("valid_score", ascending=False).head(10).copy()
+    top = log.sort_values("valid_score", ascending=False).head(10).copy().reset_index(drop=True)
+    top["plot_label"] = [
+        f"#{i + 1}\n{row.hybrid_score_name}\nTop{int(row.top_k)} | P{int(row.promethee_top_n) if pd.notna(row.promethee_top_n) else '-'} | {row.entropy_weight_method}"
+        for i, row in top.iterrows()
+    ]
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(top["experiment_id"].astype(str) + "\n" + top["hybrid_score_name"].astype(str) + "\nTop" + top["top_k"].astype(str), top["valid_score"], color="#4C78A8")
+    colors = np.where(top.get("selected_as_final", False).astype(bool), "#59A14F", "#4C78A8")
+    bars = ax.bar(np.arange(len(top)), top["valid_score"], color=colors)
+    ax.set_xticks(np.arange(len(top)))
+    ax.set_xticklabels(top["plot_label"], rotation=35, ha="right", fontsize=7)
     ax.set_title("Top 10 validation composite scores")
     ax.set_ylabel("valid_score")
-    ax.tick_params(axis="x", rotation=35, labelsize=7)
+    ax.grid(axis="y", alpha=0.25)
+    for bar, value in zip(bars, top["valid_score"]):
+        ax.text(bar.get_x() + bar.get_width() / 2, value, f"{value:.2f}", ha="center", va="bottom", fontsize=7)
     fig.tight_layout()
     fig.savefig(FIG / "fig_optimization_valid_score_top10.png", dpi=180)
     plt.close(fig)

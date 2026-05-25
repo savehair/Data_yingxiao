@@ -37,6 +37,36 @@ def load_config() -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def fig_optimization_valid_score_top10_fixed() -> Path:
+    plt = configure_matplotlib()
+    log_path = OUT / "optimization_experiment_log.csv"
+    if log_path.exists():
+        log = pd.read_csv(log_path, encoding="utf-8-sig")
+    else:
+        log = pd.read_csv(OUT / "final_algorithm_comparison_summary.csv", encoding="utf-8-sig")
+    top = log.sort_values("valid_score", ascending=False).head(10).copy().reset_index(drop=True)
+    top["plot_label"] = [
+        f"#{i + 1}\n{row.hybrid_score_name}\nTop{int(row.top_k)} | P{int(row.promethee_top_n) if pd.notna(row.promethee_top_n) else '-'} | {row.entropy_weight_method}"
+        for i, row in top.iterrows()
+    ]
+    colors = np.where(top.get("selected_as_final", False).astype(bool), "#59A14F", "#4C78A8")
+
+    fig, ax = plt.subplots(figsize=(12, 4.8))
+    bars = ax.bar(np.arange(len(top)), top["valid_score"], color=colors)
+    ax.set_xticks(np.arange(len(top)))
+    ax.set_xticklabels(top["plot_label"], rotation=35, ha="right", fontsize=7)
+    ax.set_ylabel("valid_score")
+    ax.set_title("Top 10 validation composite scores")
+    ax.grid(axis="y", alpha=0.25)
+    for bar, value in zip(bars, top["valid_score"]):
+        ax.text(bar.get_x() + bar.get_width() / 2, value, f"{value:.2f}", ha="center", va="bottom", fontsize=7)
+    fig.tight_layout()
+    out = FIG / "fig_optimization_valid_score_top10.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def fig_rankic_split_summary() -> Path:
     plt = configure_matplotlib()
     rankic = pd.read_csv(OUT / "stagewise_quarterly_rankic.csv", encoding="utf-8-sig")
@@ -363,6 +393,7 @@ def fig_turnover_and_holding_count() -> Path:
 def main() -> None:
     FIG.mkdir(exist_ok=True)
     generated = [
+        fig_optimization_valid_score_top10_fixed(),
         fig_rankic_split_summary(),
         fig_top20_return_vs_benchmark(),
         fig_top20_equity_drawdown(),
