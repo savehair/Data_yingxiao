@@ -67,6 +67,100 @@ def fig_optimization_valid_score_top10_fixed() -> Path:
     return out
 
 
+def stagewise_only_log() -> pd.DataFrame:
+    log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
+    stagewise = log.loc[
+        log["hybrid_score_name"].eq("pure_stagewise_score")
+        & log["top_k"].eq(20)
+        & log["entropy_weight_method"].eq("none")
+    ].copy()
+    if stagewise.empty:
+        stagewise = log.loc[log["hybrid_score_name"].eq("pure_stagewise_score") & log["top_k"].eq(20)].copy()
+    return stagewise.drop_duplicates("experiment_id")
+
+
+def fig_parameter_stagewise_comparison() -> Path:
+    plt = configure_matplotlib()
+    sw = stagewise_only_log()
+    panels = [
+        ("rolling_window", "Rolling window"),
+        ("max_selected_features", "Max selected features"),
+        ("selection_objective", "Selection objective"),
+        ("feature_corr_threshold", "Feature corr threshold"),
+    ]
+    fig, axes = plt.subplots(2, 2, figsize=(12, 7.2))
+    for ax, (col, title) in zip(axes.ravel(), panels):
+        d = sw.copy()
+        d[col] = d[col].fillna("None").astype(str)
+        grouped = d.groupby(col).agg(
+            mean_valid_score=("valid_score", "mean"),
+            max_valid_score=("valid_score", "max"),
+            mean_valid_rankic=("valid_rankic", "mean"),
+        ).reset_index()
+        grouped = grouped.sort_values("max_valid_score", ascending=False)
+        x = np.arange(len(grouped))
+        ax.bar(x - 0.18, grouped["mean_valid_score"], width=0.36, color="#A0CBE8", label="mean valid_score")
+        ax.bar(x + 0.18, grouped["max_valid_score"], width=0.36, color="#4C78A8", label="max valid_score")
+        ax.axhline(0, color="#777777", linewidth=1)
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(grouped[col], rotation=30, ha="right", fontsize=7)
+        ax.set_ylabel("valid_score")
+        ax.grid(axis="y", alpha=0.2)
+    axes[0, 0].legend(fontsize=8)
+    fig.suptitle("Stagewise parameter comparison on validation score", y=1.02)
+    fig.tight_layout()
+    out = FIG / "fig_parameter_stagewise_comparison_optimized.png"
+    fig.savefig(out, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def fig_parameter_preprocessing_comparison() -> Path:
+    plt = configure_matplotlib()
+    sw = stagewise_only_log()
+    pivot = sw.pivot_table(
+        index="scaling_method",
+        columns="winsorize_quantile",
+        values="valid_score",
+        aggfunc="max",
+    ).sort_index()
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), gridspec_kw={"width_ratios": [1.1, 1]})
+    ax = axes[0]
+    values = pivot.to_numpy(dtype=float)
+    im = ax.imshow(values, aspect="auto", cmap="YlGnBu")
+    ax.set_title("Preprocessing: max valid_score")
+    ax.set_xlabel("winsorize quantile")
+    ax.set_ylabel("scaling method")
+    ax.set_xticks(np.arange(len(pivot.columns)))
+    ax.set_xticklabels([str(c) for c in pivot.columns])
+    ax.set_yticks(np.arange(len(pivot.index)))
+    ax.set_yticklabels(pivot.index)
+    for i in range(values.shape[0]):
+        for j in range(values.shape[1]):
+            if np.isfinite(values[i, j]):
+                ax.text(j, i, f"{values[i, j]:.2f}", ha="center", va="center", fontsize=8)
+    fig.colorbar(im, ax=ax, fraction=0.04, label="valid_score")
+
+    ax = axes[1]
+    rankic = sw.groupby("scaling_method").agg(valid_rankic=("valid_rankic", "mean"), test_rankic=("test_rankic", "mean")).reset_index()
+    x = np.arange(len(rankic))
+    ax.bar(x - 0.18, rankic["valid_rankic"], width=0.36, label="valid RankIC", color="#59A14F")
+    ax.bar(x + 0.18, rankic["test_rankic"], width=0.36, label="test RankIC", color="#E15759")
+    ax.axhline(0, color="#777777", linewidth=1)
+    ax.set_xticks(x)
+    ax.set_xticklabels(rankic["scaling_method"], rotation=30, ha="right", fontsize=8)
+    ax.set_title("Scaling method RankIC comparison")
+    ax.set_ylabel("RankIC")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    out = FIG / "fig_parameter_preprocessing_comparison_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def fig_rankic_split_summary() -> Path:
     plt = configure_matplotlib()
     rankic = pd.read_csv(OUT / "stagewise_quarterly_rankic.csv", encoding="utf-8-sig")
@@ -288,6 +382,40 @@ def fig_preference_function_valid_metrics() -> Path:
     return out
 
 
+def fig_parameter_promethee_comparison() -> Path:
+    plt = configure_matplotlib()
+    log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
+    pro = log.loc[~log["entropy_weight_method"].eq("none")].copy()
+    pro = pro.loc[pro["hybrid_score_name"].isin(["pure_promethee_score", "hybrid_score_30_70", "hybrid_score_50_50", "hybrid_score_70_30"])]
+
+    pref_heat = pro.pivot_table(index="preference_function", columns="entropy_weight_method", values="valid_score", aggfunc="max")
+    topn_heat = pro.pivot_table(index="promethee_top_n", columns="preference_function", values="valid_score", aggfunc="max")
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    for ax, heat, title in [
+        (axes[0], pref_heat, "Preference x entropy method: max valid_score"),
+        (axes[1], topn_heat, "PROMETHEE top_n x preference: max valid_score"),
+    ]:
+        heat = heat.sort_index()
+        values = heat.to_numpy(dtype=float)
+        im = ax.imshow(values, aspect="auto", cmap="RdYlGn")
+        ax.set_title(title)
+        ax.set_xticks(np.arange(len(heat.columns)))
+        ax.set_xticklabels(heat.columns, rotation=30, ha="right", fontsize=8)
+        ax.set_yticks(np.arange(len(heat.index)))
+        ax.set_yticklabels([str(x) for x in heat.index], fontsize=8)
+        for i in range(values.shape[0]):
+            for j in range(values.shape[1]):
+                if np.isfinite(values[i, j]):
+                    ax.text(j, i, f"{values[i, j]:.2f}", ha="center", va="center", fontsize=7)
+        fig.colorbar(im, ax=ax, fraction=0.04, label="valid_score")
+    fig.tight_layout()
+    out = FIG / "fig_parameter_promethee_comparison_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def fig_promethee_preference_function_comparison() -> Path:
     plt = configure_matplotlib()
     pref = pd.read_csv(OUT / "promethee_preference_function_comparison.csv", encoding="utf-8-sig")
@@ -390,10 +518,84 @@ def fig_turnover_and_holding_count() -> Path:
     return out
 
 
+def fig_parameter_hybrid_topk_comparison() -> Path:
+    plt = configure_matplotlib()
+    log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
+    heat = log.pivot_table(index="hybrid_score_name", columns="top_k", values="valid_score", aggfunc="max")
+    desired = ["pure_stagewise_score", "pure_promethee_score", "hybrid_score_70_30", "hybrid_score_50_50", "hybrid_score_30_70"]
+    heat = heat.reindex([x for x in desired if x in heat.index])
+    values = heat.to_numpy(dtype=float)
+
+    fig, ax = plt.subplots(figsize=(9.5, 5))
+    im = ax.imshow(values, aspect="auto", cmap="RdYlGn")
+    ax.set_title("Hybrid score and Top-K parameter comparison")
+    ax.set_xlabel("Top-K")
+    ax.set_ylabel("Score method")
+    ax.set_xticks(np.arange(len(heat.columns)))
+    ax.set_xticklabels([str(int(c)) for c in heat.columns])
+    ax.set_yticks(np.arange(len(heat.index)))
+    ax.set_yticklabels(heat.index, fontsize=8)
+    for i in range(values.shape[0]):
+        for j in range(values.shape[1]):
+            if np.isfinite(values[i, j]):
+                ax.text(j, i, f"{values[i, j]:.2f}", ha="center", va="center", fontsize=8)
+    fig.colorbar(im, ax=ax, fraction=0.035, label="max valid_score")
+    fig.tight_layout()
+    out = FIG / "fig_parameter_hybrid_topk_comparison_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def fig_parameter_valid_test_stability() -> Path:
+    plt = configure_matplotlib()
+    log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
+    df = log.dropna(subset=["valid_annualized_return", "test_annualized_return"]).copy()
+    focus = df.loc[df["top_k"].isin([10, 20, 30, 50])].copy()
+    colors = {10: "#E15759", 15: "#B07AA1", 20: "#59A14F", 30: "#4C78A8", 50: "#F28E2B"}
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for k, group in focus.groupby("top_k"):
+        ax.scatter(
+            group["valid_annualized_return"] * 100,
+            group["test_annualized_return"] * 100,
+            s=26,
+            alpha=0.45,
+            label=f"Top{k}",
+            color=colors.get(int(k), "#777777"),
+            linewidths=0,
+        )
+    selected = df.loc[df["selected_as_final"].astype(bool)]
+    if not selected.empty:
+        ax.scatter(
+            selected["valid_annualized_return"] * 100,
+            selected["test_annualized_return"] * 100,
+            s=120,
+            marker="*",
+            color="#111111",
+            label="selected final",
+            zorder=5,
+        )
+    ax.axhline(0, color="#777777", linewidth=1)
+    ax.axvline(0, color="#777777", linewidth=1)
+    ax.set_title("Validation vs test annualized return by Top-K")
+    ax.set_xlabel("valid annualized return (%)")
+    ax.set_ylabel("test annualized return (%)")
+    ax.legend(fontsize=8, ncol=2)
+    ax.grid(alpha=0.2)
+    fig.tight_layout()
+    out = FIG / "fig_parameter_valid_test_stability_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def main() -> None:
     FIG.mkdir(exist_ok=True)
     generated = [
         fig_optimization_valid_score_top10_fixed(),
+        fig_parameter_stagewise_comparison(),
+        fig_parameter_preprocessing_comparison(),
         fig_rankic_split_summary(),
         fig_top20_return_vs_benchmark(),
         fig_top20_equity_drawdown(),
@@ -401,10 +603,13 @@ def main() -> None:
         fig_rating_group_separation(),
         fig_feature_macro_heatmap(),
         fig_preference_function_valid_metrics(),
+        fig_parameter_promethee_comparison(),
         fig_promethee_preference_function_comparison(),
         fig_promethee_net_flow_distribution(),
         fig_topk_quarterly_return_stagewise(),
         fig_turnover_and_holding_count(),
+        fig_parameter_hybrid_topk_comparison(),
+        fig_parameter_valid_test_stability(),
     ]
     manifest = pd.DataFrame({"figure": [str(p.relative_to(ROOT)).replace("\\", "/") for p in generated]})
     manifest.to_csv(OUT / "additional_visualization_manifest.csv", index=False, encoding="utf-8-sig")
