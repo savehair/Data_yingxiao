@@ -258,6 +258,86 @@ def fig_preference_function_valid_metrics() -> Path:
     return out
 
 
+def fig_promethee_preference_function_comparison() -> Path:
+    plt = configure_matplotlib()
+    pref = pd.read_csv(OUT / "promethee_preference_function_comparison.csv", encoding="utf-8-sig")
+    valid = pref.loc[pref["split"].eq("valid")].copy()
+    order = ["usual", "u_shape", "v_shape", "level", "linear", "gaussian"]
+    valid["preference_function"] = pd.Categorical(valid["preference_function"], categories=order, ordered=True)
+    valid = valid.sort_values("preference_function")
+
+    fig, ax1 = plt.subplots(figsize=(10, 4.8))
+    x = np.arange(len(valid))
+    bars = ax1.bar(
+        x,
+        valid["top20_annualized_return"] * 100,
+        color=np.where(valid["selected_as_final"], "#59A14F", "#4C78A8"),
+        alpha=0.85,
+        label="Top20 annualized return",
+    )
+    ax1.axhline(0, color="#777777", linewidth=1)
+    ax1.set_ylabel("Top20 annualized return (%)")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(valid["preference_function"].astype(str), rotation=25)
+    ax2 = ax1.twinx()
+    ax2.plot(x, valid["mean_rankic"], color="#E15759", marker="o", linewidth=2, label="RankIC")
+    ax2.set_ylabel("RankIC")
+    ax1.set_title("PROMETHEE preference function comparison on validation split")
+    for bar, value in zip(bars, valid["top20_annualized_return"] * 100):
+        ax1.text(bar.get_x() + bar.get_width() / 2, value, f"{value:.1f}%", ha="center", va="bottom" if value >= 0 else "top", fontsize=7)
+    lines, labels = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines + lines2, labels + labels2, loc="best", fontsize=8)
+    fig.tight_layout()
+    out = FIG / "fig_promethee_preference_function_comparison.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def fig_promethee_net_flow_distribution() -> Path:
+    plt = configure_matplotlib()
+    pro = pd.read_csv(OUT / "promethee_scores_stagewise.csv", encoding="utf-8-sig")
+    pred = pd.read_csv(OUT / "stagewise_prediction_panel.csv", encoding="utf-8-sig", usecols=["quarter_idx", "split"])
+    split_map = pred.drop_duplicates("quarter_idx").set_index("quarter_idx")["split"].to_dict()
+    pro["split"] = pro["quarter_idx"].map(split_map)
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    bins = 40
+    for split, color in [("train", "#4C78A8"), ("valid", "#59A14F"), ("test", "#E15759")]:
+        values = pro.loc[pro["split"].eq(split), "promethee_net_flow"].dropna()
+        if not values.empty:
+            ax.hist(values, bins=bins, alpha=0.45, label=split, color=color, density=True)
+    ax.axvline(0, color="#777777", linewidth=1)
+    ax.set_title("PROMETHEE net flow distribution")
+    ax.set_xlabel("net_flow")
+    ax.set_ylabel("density")
+    ax.legend()
+    fig.tight_layout()
+    out = FIG / "fig_promethee_net_flow_distribution.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def fig_topk_quarterly_return_stagewise() -> Path:
+    plt = configure_matplotlib()
+    returns = pd.read_csv(OUT / "topk_quarterly_returns_stagewise.csv", encoding="utf-8-sig").sort_values("quarter_idx")
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    ax.plot(returns["quarter_idx"], returns["portfolio_return"], marker="o", linewidth=2, label="Top20 portfolio", color="#4C78A8")
+    ax.plot(returns["quarter_idx"], returns["benchmark_return"], marker="o", linewidth=2, label="Benchmark", color="#F28E2B")
+    ax.bar(returns["quarter_idx"], returns["excess_return"], alpha=0.25, label="Excess return", color="#59A14F")
+    ax.axhline(0, color="#777777", linewidth=1)
+    ax.set_title("Top-K quarterly return stagewise")
+    ax.set_xlabel("quarter_idx")
+    ax.set_ylabel("return (%)")
+    ax.legend()
+    fig.tight_layout()
+    out = FIG / "fig_topk_quarterly_return_stagewise.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def fig_turnover_and_holding_count() -> Path:
     plt = configure_matplotlib()
     returns = pd.read_csv(OUT / "topk_quarterly_returns_stagewise.csv", encoding="utf-8-sig").sort_values("quarter_idx")
@@ -290,6 +370,9 @@ def main() -> None:
         fig_rating_group_separation(),
         fig_feature_macro_heatmap(),
         fig_preference_function_valid_metrics(),
+        fig_promethee_preference_function_comparison(),
+        fig_promethee_net_flow_distribution(),
+        fig_topk_quarterly_return_stagewise(),
         fig_turnover_and_holding_count(),
     ]
     manifest = pd.DataFrame({"figure": [str(p.relative_to(ROOT)).replace("\\", "/") for p in generated]})
