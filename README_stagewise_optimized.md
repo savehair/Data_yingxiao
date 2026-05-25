@@ -40,6 +40,16 @@ The script verifies that interpreter before running. Parameter selection uses on
 - `outputs_optimized/rating_performance_stagewise.csv`
 - `final_stagewise_report_optimized.ipynb`
 
+## Additional Visual Diagnostics
+
+After the main optimization output exists, generate the extended diagnostic figures with:
+
+```bat
+E:\JetBrains\Anaconda3\envs\pytorch\python.exe scripts\06_generate_additional_visualizations.py
+```
+
+This writes an index file to `outputs_optimized/additional_visualization_manifest.csv` and adds figures that explain the result from several angles: RankIC by split, Top20 return versus benchmark, cumulative equity and drawdown, score decile returns, rating group separation, selected factor heatmap, PROMETHEE preference-function sensitivity, and turnover/holding count.
+
 ## Leakage Controls
 
 - `future_return_1q` is used only as the label and for ex-post evaluation.
