@@ -48,7 +48,7 @@ After the main optimization output exists, generate the extended diagnostic figu
 E:\JetBrains\Anaconda3\envs\pytorch\python.exe scripts\06_generate_additional_visualizations.py
 ```
 
-This writes an index file to `outputs_optimized/additional_visualization_manifest.csv` and adds figures that explain the result from several angles: parameter comparisons, RankIC by split, Top20 return versus benchmark, cumulative equity and drawdown, score decile returns, rating group separation, selected factor heatmap, PROMETHEE preference-function sensitivity, valid/test stability, and turnover/holding count.
+This writes an index file to `outputs_optimized/additional_visualization_manifest.csv` and adds figures that explain the result from several angles: parameter comparisons, direct score-scheme comparisons, RankIC by split, Top20 return versus benchmark, cumulative equity and drawdown, score decile returns, rating group separation, selected factor heatmap, PROMETHEE preference-function sensitivity, valid/test stability, and turnover/holding count.
 
 ## Leakage Controls
 

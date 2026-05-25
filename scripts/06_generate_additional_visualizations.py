@@ -547,6 +547,195 @@ def fig_parameter_hybrid_topk_comparison() -> Path:
     return out
 
 
+def final_score_scheme_log() -> pd.DataFrame:
+    config = load_config()
+    log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
+    mask = (
+        log["experiment_id"].eq(config.get("experiment_id"))
+        & log["top_k"].eq(20)
+        & log["promethee_top_n"].eq(config.get("promethee_top_n"))
+        & log["preference_function"].eq(config.get("preference_function"))
+        & log["entropy_weight_method"].eq(config.get("entropy_weight_method"))
+        & log["min_selected_count"].eq(config.get("min_selected_count"))
+        & log["sign_stability_threshold"].eq(config.get("sign_stability_threshold"))
+    )
+    df = log.loc[mask].copy()
+    order = ["pure_stagewise_score", "hybrid_score_30_70", "hybrid_score_50_50", "hybrid_score_70_30", "pure_promethee_score"]
+    df["score_order"] = df["hybrid_score_name"].map({name: i for i, name in enumerate(order)})
+    df = df.sort_values("score_order").drop_duplicates("hybrid_score_name", keep="first")
+    df["display_name"] = df["hybrid_score_name"].map(
+        {
+            "pure_stagewise_score": "Stagewise only",
+            "hybrid_score_30_70": "30% PROM + 70% SW",
+            "hybrid_score_50_50": "50% PROM + 50% SW",
+            "hybrid_score_70_30": "70% PROM + 30% SW",
+            "pure_promethee_score": "PROMETHEE only",
+        }
+    )
+    return df
+
+
+def fig_score_scheme_valid_test_bars() -> Path:
+    plt = configure_matplotlib()
+    df = final_score_scheme_log()
+    x = np.arange(len(df))
+    width = 0.36
+    colors = np.where(df["selected_as_final"].astype(bool), "#59A14F", "#4C78A8")
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), sharex=True)
+    for ax, valid_col, test_col, title, ylabel, scale in [
+        (axes[0], "valid_annualized_return", "test_annualized_return", "Annualized return by score scheme", "annualized return (%)", 100),
+        (axes[1], "valid_sharpe", "test_sharpe", "Sharpe by score scheme", "Sharpe", 1),
+    ]:
+        v = df[valid_col].to_numpy(float) * scale
+        t = df[test_col].to_numpy(float) * scale
+        bars1 = ax.bar(x - width / 2, v, width, label="valid", color=colors, alpha=0.9)
+        bars2 = ax.bar(x + width / 2, t, width, label="test", color="#F28E2B", alpha=0.85)
+        ax.axhline(0, color="#777777", linewidth=1)
+        ax.set_title(title)
+        ax.set_ylabel(ylabel)
+        ax.set_xticks(x)
+        ax.set_xticklabels(df["display_name"], rotation=25, ha="right", fontsize=8)
+        ax.grid(axis="y", alpha=0.2)
+        for bars in [bars1, bars2]:
+            for bar in bars:
+                value = bar.get_height()
+                label = f"{value:.1f}%" if scale == 100 else f"{value:.2f}"
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    value,
+                    label,
+                    ha="center",
+                    va="bottom" if value >= 0 else "top",
+                    fontsize=7,
+                )
+    axes[0].legend(fontsize=8)
+    fig.suptitle("Score scheme comparison: green is the final selected scheme", y=1.03)
+    fig.tight_layout()
+    out = FIG / "fig_score_scheme_valid_test_bars_optimized.png"
+    fig.savefig(out, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def fig_score_scheme_metric_scoreboard() -> Path:
+    plt = configure_matplotlib()
+    df = final_score_scheme_log()
+    metric_cols = ["valid_annualized_return", "valid_sharpe", "valid_alpha", "test_annualized_return", "test_sharpe"]
+    display_cols = ["valid return", "valid Sharpe", "valid Alpha", "test return", "test Sharpe"]
+    values = df[metric_cols].copy()
+    values[["valid_annualized_return", "valid_alpha", "test_annualized_return"]] *= 100
+    raw = values.to_numpy(float)
+
+    normalized = values.copy()
+    for col in metric_cols:
+        s = normalized[col].astype(float)
+        lo, hi = s.min(), s.max()
+        normalized[col] = 0.5 if abs(hi - lo) < 1e-12 else (s - lo) / (hi - lo)
+
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    im = ax.imshow(normalized.to_numpy(float), aspect="auto", cmap="RdYlGn", vmin=0, vmax=1)
+    ax.set_title("Score scheme scoreboard: greener means better within this comparison")
+    ax.set_xticks(np.arange(len(display_cols)))
+    ax.set_xticklabels(display_cols, rotation=20, ha="right")
+    ax.set_yticks(np.arange(len(df)))
+    ax.set_yticklabels(df["display_name"], fontsize=8)
+    for i in range(raw.shape[0]):
+        for j in range(raw.shape[1]):
+            text = f"{raw[i, j]:.1f}%" if j in [0, 2, 3] else f"{raw[i, j]:.2f}"
+            ax.text(j, i, text, ha="center", va="center", fontsize=8, color="#111111")
+    for i, selected in enumerate(df["selected_as_final"].astype(bool)):
+        if selected:
+            ax.text(-0.75, i, "FINAL", ha="center", va="center", fontsize=8, fontweight="bold", color="#59A14F")
+    fig.colorbar(im, ax=ax, fraction=0.035, label="column-normalized score")
+    fig.tight_layout()
+    out = FIG / "fig_score_scheme_metric_scoreboard_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def score_scheme_quarterly_returns(top_k: int = 20) -> pd.DataFrame:
+    panel = pd.read_csv(OUT / "hybrid_scores_stagewise.csv", dtype={"stock_id": str}, encoding="utf-8-sig")
+    schemes = ["pure_stagewise_score", "hybrid_score_30_70", "hybrid_score_50_50", "hybrid_score_70_30", "pure_promethee_score"]
+    rows = []
+    for scheme in schemes:
+        for q, group in panel.groupby("quarter_idx", sort=True):
+            ranked = group.dropna(subset=[scheme, LABEL]).sort_values([scheme, "stock_id"], ascending=[False, True]).head(top_k)
+            if ranked.empty:
+                continue
+            rows.append(
+                {
+                    "quarter_idx": int(q),
+                    "split": ranked["split"].iloc[0],
+                    "score_scheme": scheme,
+                    "display_name": {
+                        "pure_stagewise_score": "Stagewise only",
+                        "hybrid_score_30_70": "30% PROM + 70% SW",
+                        "hybrid_score_50_50": "50% PROM + 50% SW",
+                        "hybrid_score_70_30": "70% PROM + 30% SW",
+                        "pure_promethee_score": "PROMETHEE only",
+                    }[scheme],
+                    "portfolio_return": float(ranked[LABEL].mean()),
+                    "benchmark_return": float(group[LABEL].mean()),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def fig_score_scheme_cumulative_returns() -> Path:
+    plt = configure_matplotlib()
+    returns = score_scheme_quarterly_returns(20)
+    colors = {
+        "Stagewise only": "#59A14F",
+        "30% PROM + 70% SW": "#4C78A8",
+        "50% PROM + 50% SW": "#F28E2B",
+        "70% PROM + 30% SW": "#B07AA1",
+        "PROMETHEE only": "#E15759",
+    }
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    for name, group in returns.groupby("display_name", sort=False):
+        g = group.sort_values("quarter_idx")
+        equity = (1.0 + g["portfolio_return"] / 100.0).cumprod() - 1.0
+        lw = 3.0 if name == "Stagewise only" else 1.8
+        ax.plot(g["quarter_idx"], equity * 100, marker="o", linewidth=lw, color=colors[name], label=name)
+    bench = returns.drop_duplicates("quarter_idx").sort_values("quarter_idx")
+    bench_equity = (1.0 + bench["benchmark_return"] / 100.0).cumprod() - 1.0
+    ax.plot(bench["quarter_idx"], bench_equity * 100, linestyle="--", color="#555555", label="Benchmark")
+    ax.axhline(0, color="#777777", linewidth=1)
+    ax.set_title("Top20 cumulative return by score scheme")
+    ax.set_xlabel("quarter_idx")
+    ax.set_ylabel("cumulative return (%)")
+    ax.legend(fontsize=8, ncol=2)
+    ax.grid(alpha=0.2)
+    fig.tight_layout()
+    out = FIG / "fig_score_scheme_cumulative_returns_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def fig_score_scheme_valid_test_quadrants() -> Path:
+    plt = configure_matplotlib()
+    df = final_score_scheme_log()
+    colors = np.where(df["selected_as_final"].astype(bool), "#59A14F", "#4C78A8")
+    fig, ax = plt.subplots(figsize=(7.5, 6))
+    ax.scatter(df["valid_annualized_return"] * 100, df["test_annualized_return"] * 100, s=120, color=colors)
+    for _, row in df.iterrows():
+        ax.text(row["valid_annualized_return"] * 100, row["test_annualized_return"] * 100, row["display_name"], fontsize=8, ha="left", va="bottom")
+    ax.axhline(0, color="#777777", linewidth=1)
+    ax.axvline(0, color="#777777", linewidth=1)
+    ax.set_title("Score schemes: valid return vs test return")
+    ax.set_xlabel("valid annualized return (%)")
+    ax.set_ylabel("test annualized return (%)")
+    ax.grid(alpha=0.2)
+    fig.tight_layout()
+    out = FIG / "fig_score_scheme_valid_test_quadrants_optimized.png"
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def fig_parameter_valid_test_stability() -> Path:
     plt = configure_matplotlib()
     log = pd.read_csv(OUT / "optimization_experiment_log.csv", encoding="utf-8-sig")
@@ -609,6 +798,10 @@ def main() -> None:
         fig_topk_quarterly_return_stagewise(),
         fig_turnover_and_holding_count(),
         fig_parameter_hybrid_topk_comparison(),
+        fig_score_scheme_valid_test_bars(),
+        fig_score_scheme_metric_scoreboard(),
+        fig_score_scheme_cumulative_returns(),
+        fig_score_scheme_valid_test_quadrants(),
         fig_parameter_valid_test_stability(),
     ]
     manifest = pd.DataFrame({"figure": [str(p.relative_to(ROOT)).replace("\\", "/") for p in generated]})

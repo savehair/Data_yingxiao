@@ -1225,6 +1225,70 @@ Hybrid Score 把前向分步回归和 PROMETHEE 的排序分数进行融合。`p
 
 从表中可以看出，本次最终选择的是 `pure_stagewise_score`，说明在验证集主方案选择中，前向分步回归排序比 PROMETHEE-only 或混合分数更适合作为最终 Top20 选股依据。
 
+### 图 7-1：评分方案 valid/test 一眼对比
+
+![图 7-1：评分方案 valid/test 一眼对比](../figures_optimized/fig_score_scheme_valid_test_bars_optimized.png)
+
+**这张图展示什么：**  
+这张图把五种评分方案放在同一张图里，直接比较 valid/test 年化收益和 Sharpe。
+
+**应该怎么看：**  
+左图看年化收益，右图看 Sharpe。每个评分方案都有两根柱子：valid 和 test。绿色代表最终选中的 `Stagewise only`。
+
+**从图中能得到什么结论：**  
+这张图最直观地说明，`pure_stagewise_score` 在验证集表现最强，测试集虽然明显变弱，但仍然比 PROMETHEE-only 和多数 Hybrid 方案更稳。
+
+**需要注意什么：**  
+valid 与 test 差距很大，说明样本外稳定性有限，不能把验证集表现直接当作未来收益。
+
+### 图 7-2：评分方案成绩单
+
+![图 7-2：评分方案成绩单](../figures_optimized/fig_score_scheme_metric_scoreboard_optimized.png)
+
+**这张图展示什么：**  
+这张图像“成绩单”一样，把每个评分方案在 valid return、valid Sharpe、valid Alpha、test return、test Sharpe 上的表现放在一起。
+
+**应该怎么看：**  
+颜色越绿表示在该列指标中相对越好，颜色越红表示相对越弱。格子里的数字就是对应指标值。
+
+**从图中能得到什么结论：**  
+不用看复杂表格也能看出，`Stagewise only` 在主要指标上整体更靠前，PROMETHEE-only 在本项目中明显较弱。
+
+**需要注意什么：**  
+颜色是列内相对比较，不代表绝对好坏。比如某个指标相对最绿，也仍可能只是“比其他方案好”，不等于非常强。
+
+### 图 7-3：不同评分方案 Top20 累计收益曲线
+
+![图 7-3：不同评分方案 Top20 累计收益曲线](../figures_optimized/fig_score_scheme_cumulative_returns_optimized.png)
+
+**这张图展示什么：**  
+这张图把五种评分方案都按 Top20 选股，比较它们随时间累积的收益曲线。
+
+**应该怎么看：**  
+每条线代表一种评分方案，虚线是等权基准。最终方案 `Stagewise only` 用更粗的绿色线表示。
+
+**从图中能得到什么结论：**  
+如果一条线长期高于其他线，说明该评分方案在样本期内更有优势。图中最终方案整体更容易被肉眼识别出来。
+
+**需要注意什么：**  
+累计收益受少数季度影响较大，因此还要结合 Sharpe、回撤、RankIC 和测试集表现一起看。
+
+### 图 7-4：评分方案 valid/test 象限图
+
+![图 7-4：评分方案 valid/test 象限图](../figures_optimized/fig_score_scheme_valid_test_quadrants_optimized.png)
+
+**这张图展示什么：**  
+这张图把每个评分方案画成一个点，横轴是 valid 年化收益，纵轴是 test 年化收益。
+
+**应该怎么看：**  
+越靠右表示验证集收益越高，越靠上表示测试集收益越高。右上角最好，左下角最差。
+
+**从图中能得到什么结论：**  
+这张图非常直观地显示：有些方案验证集不差，但测试集表现明显变弱；最终方案处在相对更可接受的位置。
+
+**需要注意什么：**  
+不能因为某个方案测试集位置更高就反向选择它。最终方案仍必须根据训练集和验证集确定。
+
 ### 24.6 Top-K 回测结果分析
 
 Top-K 回测的意思是：每个季度按评分从高到低排序，选出前 K 只股票等权持有到下一期。本项目比较了 Top10、Top15、Top20、Top30、Top50，其中最终主方案为 Top20。
