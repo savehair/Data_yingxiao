@@ -1,0 +1,12 @@
+﻿feature,selected_count,avg_coefficient,avg_abs_coefficient,positive_coef_ratio,first_selected_avg_step,negative_coef_ratio,sign_stability,stock_factor,macro_factor,is_composite,stable_rule
+composite_净资产收益率_TTM_x_ntis,10,-2.5317956848445884,2.531795684844589,0.0,2.5,1.0,1.0,净资产收益率(TTM),ntis,True,selected_count>=3 and sign_stability>=0.60
+composite_市净率PB_LF_x_svar,9,3.0412295807401595,3.0412295807401595,1.0,1.8888888888888888,0.0,1.0,市净率PB(LF),svar,True,selected_count>=3 and sign_stability>=0.60
+composite_流通市值_x_itgr,5,-1.3421598031609174,2.412500619457292,0.2,2.6,0.8,0.8,流通市值,itgr,True,selected_count>=3 and sign_stability>=0.60
+composite_总市值_证监会算法_x_bm,5,0.9019712555057537,3.4028545710695446,0.6,1.2,0.4,0.6,总市值(证监会算法),bm,True,selected_count>=3 and sign_stability>=0.60
+composite_市净率PB_LF_x_ntis,4,-2.31568677059292,2.31568677059292,0.0,2.5,1.0,1.0,市净率PB(LF),ntis,True,selected_count>=3 and sign_stability>=0.60
+composite_净资产收益率_TTM_x_m2gr,4,-1.7365649583819043,2.90637047978918,0.25,1.25,0.75,0.75,净资产收益率(TTM),m2gr,True,selected_count>=3 and sign_stability>=0.60
+composite_流通市值_x_mtr,4,1.0702846411848577,1.9647149047426855,0.75,3.5,0.25,0.75,流通市值,mtr,True,selected_count>=3 and sign_stability>=0.60
+composite_流通市值_x_bm,3,-2.245914970607303,2.245914970607303,0.0,3.3333333333333335,1.0,1.0,流通市值,bm,True,selected_count>=3 and sign_stability>=0.60
+composite_销售毛利率_TTM_x_dp,3,-1.9359878601745375,1.9359878601745375,0.0,4.333333333333333,1.0,1.0,销售毛利率(TTM),dp,True,selected_count>=3 and sign_stability>=0.60
+composite_销售净利率_TTM_x_m2gr,3,-1.6233179432073557,1.6233179432073557,0.0,5.0,1.0,1.0,销售净利率(TTM),m2gr,True,selected_count>=3 and sign_stability>=0.60
+composite_净资产收益率_TTM_x_itgr,3,0.576951522955586,2.552132451096186,0.6666666666666666,3.0,0.33333333333333337,0.6666666666666666,净资产收益率(TTM),itgr,True,selected_count>=3 and sign_stability>=0.60

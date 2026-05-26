@@ -1,0 +1,5 @@
+﻿split,strategy,score_col,topk,buffer_rule,mean_quarterly_alpha,alpha,alpha_t_stat,information_ratio,tracking_error,excess_win_rate,alpha_stability_score
+all,robust__pure_stagewise_score__none_top20_buffer,robust__pure_stagewise_score__none,20,buffer,0.030440531214817917,0.10538666303661412,1.6312659274487737,0.38449306640586356,0.07917055956136664,0.5555555555555556,0.21360725911436865
+test,robust__pure_stagewise_score__none_top20_buffer,robust__pure_stagewise_score__none,20,buffer,-0.006928899461928643,-0.03725801224314203,-0.3464680443617408,-0.15494521984485302,0.04471838156005436,0.6,-0.0929671319069118
+train,robust__pure_stagewise_score__none_top20_buffer,robust__pure_stagewise_score__none,20,buffer,0.002054319854026287,0.003204812361353171,0.11569715666184426,0.03856571888728142,0.05326802956871059,0.3333333333333333,0.012855239629093806
+valid,robust__pure_stagewise_score__none_top20_buffer,robust__pure_stagewise_score__none,20,buffer,0.14102129512253225,0.6054344297355162,4.333132628465565,2.1665663142327825,0.06508976632569415,1.0,2.1665663142327825
