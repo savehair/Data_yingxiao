@@ -1,0 +1,21 @@
+{
+  "experiment_id": "sw_009",
+  "preprocessing_method": "window_median",
+  "winsorize_quantile": 0.05,
+  "scaling_method": "quarter_rank",
+  "rolling_window": 12,
+  "max_selected_features": 12,
+  "selection_objective": "residual_correlation",
+  "refit_method": "OLS",
+  "ridge_alpha": 1.0,
+  "feature_corr_threshold": 0.9,
+  "min_improvement": 0.0001,
+  "promethee_top_n": 20,
+  "entropy_weight_method": "smooth_80_20",
+  "preference_function": "linear",
+  "min_selected_count": 2,
+  "sign_stability_threshold": 0.55,
+  "hybrid_score_name": "pure_stagewise_score",
+  "top_k": 20,
+  "selection_basis": "max valid_score among valid-positive Top20/Top30 candidates; test metrics not used for selection"
+}

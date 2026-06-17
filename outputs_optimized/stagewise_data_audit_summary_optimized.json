@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-05-24T23:02:25",
+  "rows": 42720,
+  "quarter_count": 30,
+  "composite_factor_count": 231,
+  "label": "future_return_1q",
+  "time_split": "train=1-21, valid=22-25, test=26-30",
+  "note": "The local model_ready_stagewise_panel.parquet is built from audited stock and macro inputs; raw return/meta fields are not used as model features."
+}
